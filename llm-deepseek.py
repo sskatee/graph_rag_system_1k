@@ -1,7 +1,7 @@
 import os
 from openai import OpenAI
 
-os.environ['DEEPSEEK_API_KEY'] = 'sk-beb0645699024d40abc08597b1ddb64d'  # <-- вот так!
+os.environ['DEEPSEEK_API_KEY'] = 'sk-beb0645699024d40abc08597b1ddb64d'
 
 client = OpenAI(
     api_key=os.environ.get('DEEPSEEK_API_KEY'),

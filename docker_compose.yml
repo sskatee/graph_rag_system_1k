@@ -1,0 +1,66 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    restart: unless-stopped
+
+  vllm-embedding:
+    image: vllm/vllm-openai:latest
+    container_name: vllm_embedding
+    ports:
+      - "8001:8000"
+    shm_size: "2g"
+    volumes:
+      - "./models_cache:/root/.cache/huggingface"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - HUGGING_FACE_HUB_TOKEN=hf_UCKWDWOOGUOaHaQGGCsJWVignXVNJZjsANi
+    command:
+      - "--host=0.0.0.0"
+      - "--port=8000"
+      - "--model=google/embeddinggemma-300m"
+      - "--max-model-len=2048"
+      - "--gpu-memory-utilization=0.05"
+      - "--max-num-seqs=48"
+      - "--max-num-batched-tokens=2048"
+      - "--dtype=auto"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: ["gpu"]
+    restart: unless-stopped
+
+  memgraph:
+    image: memgraph/memgraph:latest
+    container_name: memgraph
+    ports:
+      - "7687:7687"
+      - "7444:7444"
+    volumes:
+      - mg_lib:/var/lib/memgraph
+      - mg_log:/var/log/memgraph
+    restart: unless-stopped
+
+  memgraph-lab:
+    image: memgraph/lab:latest
+    container_name: memgraph_lab
+    ports:
+      - "3000:3000"
+    depends_on:
+      - memgraph
+    environment:
+      - QUICK_CONNECT_MGMT_HOST=memgraph
+      - QUICK_CONNECT_MGMT_PORT=7687
+    restart: unless-stopped
+
+volumes:
+  qdrant_storage:
+  mg_lib:
+  mg_log:
