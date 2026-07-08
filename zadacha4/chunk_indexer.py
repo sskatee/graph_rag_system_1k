@@ -1,4 +1,3 @@
-# chunk_indexer.py
 import json
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct, Distance, VectorParams
