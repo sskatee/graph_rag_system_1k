@@ -21,9 +21,10 @@ except ImportError:
 # НАСТРОЙКИ
 # ============================================================
 
-SENTENCES_PER_CHUNK = 5  # Количество предложений в чанке
-OVERLAP_SENTENCES = 1  # Перекрытие в предложениях
-INPUT_FOLDER = "documents"  # Папка с файлами
+SENTENCES_PER_CHUNK = 5
+OVERLAP_SENTENCES = 1
+INPUT_FOLDER = "documents"
+OUTPUT_FILE = "chunks_output.json"  # Файл для сохранения результата
 
 
 # ============================================================
@@ -31,7 +32,6 @@ INPUT_FOLDER = "documents"  # Папка с файлами
 # ============================================================
 
 def parse_txt(file_path):
-    """Читает текстовый файл"""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             return f.read()
@@ -43,7 +43,6 @@ def parse_txt(file_path):
 
 
 def parse_pdf(file_path):
-    """Извлекает текст из PDF"""
     if PyPDF2 is None:
         return ""
     try:
@@ -60,7 +59,6 @@ def parse_pdf(file_path):
 
 
 def parse_html(file_path):
-    """Извлекает текст из HTML"""
     if BeautifulSoup is None:
         return ""
     try:
@@ -83,7 +81,6 @@ def parse_html(file_path):
 
 
 def load_document(file_path):
-    """Определяет тип файла и парсит его"""
     filename = os.path.basename(file_path)
     ext = os.path.splitext(file_path)[1].lower()
 
@@ -114,14 +111,11 @@ def load_document(file_path):
 # ============================================================
 
 def clean_text(text):
-    """Очищает и нормализует текст"""
     if not text:
         return ""
 
-    # Заменяем множественные переносы
     text = re.sub(r'\n\s*\n', '\n', text)
 
-    # Обрабатываем переносы строк
     lines = text.split('\n')
     cleaned_lines = []
     for line in lines:
@@ -134,16 +128,10 @@ def clean_text(text):
             cleaned_lines.append(line + '\n')
 
     text = ''.join(cleaned_lines)
-
-    # Убираем множественные пробелы
     text = re.sub(r' +', ' ', text)
-
-    # Нормализуем кавычки и тире
     text = text.replace('«', '"').replace('»', '"')
     text = text.replace('“', '"').replace('”', '"')
     text = text.replace('—', '-').replace('–', '-')
-
-    # Убираем непечатные символы
     text = re.sub(r'[^\w\s.,!?;:()"\'-]', ' ', text)
     text = re.sub(r' +', ' ', text)
     text = re.sub(r'\s+([.,!?;:])', r'\1', text)
@@ -152,7 +140,6 @@ def clean_text(text):
 
 
 def split_into_sentences(text):
-    """Разбивает текст на предложения"""
     if not text:
         return []
 
@@ -165,7 +152,6 @@ def split_into_sentences(text):
 
 
 def split_text_into_chunks(text, sentences_per_chunk, overlap_sentences):
-    """Разбивает текст на чанки по предложениям с перекрытием"""
     if not text:
         return []
 
@@ -202,23 +188,35 @@ def split_text_into_chunks(text, sentences_per_chunk, overlap_sentences):
 
 
 # ============================================================
-# ГЛАВНАЯ ФУНКЦИЯ - ВОЗВРАЩАЕТ СПИСОК ЧАНКОВ
+# ГЛАВНАЯ ФУНКЦИЯ - СОЗДАЕТ JSON С МЕТАДАННЫМИ
 # ============================================================
 
-def process_documents(folder_path="documents"):
+def process_documents_to_json(folder_path="documents", output_file="chunks_output.json"):
     """
-    Загружает документы, парсит, очищает, разбивает на чанки.
+    Обрабатывает документы и сохраняет результат в JSON-файл.
 
     Возвращает:
-        list: Список строк (чанков) с текстом
+        dict: Структура с метаданными и чанками
     """
-    chunks_list = []
+    # Структура для JSON
+    result = {
+        'metadata': {
+            'created_at': datetime.now().isoformat(),
+            'total_files': 0,
+            'total_chunks': 0,
+            'settings': {
+                'sentences_per_chunk': SENTENCES_PER_CHUNK,
+                'overlap_sentences': OVERLAP_SENTENCES
+            }
+        },
+        'documents': []
+    }
 
-    # Проверяем, существует ли папка
+    # Проверяем папку
     if not os.path.exists(folder_path):
         print(f"❌ Папка '{folder_path}' не найдена!")
-        print(f"💡 Создай папку '{folder_path}' и положи туда файлы.")
-        return chunks_list
+        result['metadata']['error'] = f"Папка '{folder_path}' не найдена"
+        return result
 
     # Получаем список файлов
     files = [f for f in os.listdir(folder_path)
@@ -227,10 +225,11 @@ def process_documents(folder_path="documents"):
 
     if not files:
         print(f"❌ Папка '{folder_path}' пуста!")
-        print("💡 Положи туда файлы .txt, .pdf или .html")
-        return chunks_list
+        result['metadata']['error'] = "Папка пуста"
+        return result
 
     print(f"📂 Найдено файлов: {len(files)}\n")
+    result['metadata']['total_files'] = len(files)
 
     # Обрабатываем каждый файл
     for filename in files:
@@ -259,13 +258,68 @@ def process_documents(folder_path="documents"):
 
         print(f"📄 Создано чанков: {len(chunks)}")
 
-        # Добавляем все чанки в общий список
-        for chunk in chunks:
-            chunks_list.append(chunk)
+        # Создаем структуру для документа
+        doc_data = {
+            'filename': filename,
+            'file_type': doc['file_type'],
+            'original_length': len(doc['content']),
+            'cleaned_length': len(cleaned_text),
+            'chunks_count': len(chunks),
+            'chunks': []
+        }
 
-    print(f"\n📊 ИТОГО: {len(chunks_list)} чанков создано")
+        # Добавляем каждый чанк с метаданными
+        for i, chunk_text in enumerate(chunks, 1):
+            doc_data['chunks'].append({
+                'chunk_id': i,
+                'text': chunk_text,
+                'length': len(chunk_text),
+                'sentences_count': len(split_into_sentences(chunk_text))
+            })
 
-    return chunks_list
+        result['documents'].append(doc_data)
+
+    # Обновляем общее количество чанков
+    total_chunks = sum(doc['chunks_count'] for doc in result['documents'])
+    result['metadata']['total_chunks'] = total_chunks
+
+    print(f"\n📊 ИТОГО: {total_chunks} чанков из {len(result['documents'])} документов")
+
+    # Сохраняем в JSON-файл
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+        print(f"💾 Результат сохранен в '{output_file}'")
+    except Exception as e:
+        print(f"❌ Ошибка сохранения: {e}")
+
+    return result
+
+
+# ============================================================
+# ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ JSON В ОБРАТНОМ ПОРЯДКЕ
+# ============================================================
+
+def load_json_chunks(file_path="chunks_output.json"):
+    """
+    Загружает JSON-файл и возвращает список всех чанков.
+
+    Возвращает:
+        list: Список строк с текстом чанков
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        chunks = []
+        for doc in data.get('documents', []):
+            for chunk in doc.get('chunks', []):
+                chunks.append(chunk['text'])
+
+        return chunks
+    except Exception as e:
+        print(f"❌ Ошибка загрузки: {e}")
+        return []
 
 
 # ============================================================
@@ -273,41 +327,40 @@ def process_documents(folder_path="documents"):
 # ============================================================
 
 if __name__ == "__main__":
-    # Вызываем функцию и получаем список чанков
-    chunks = process_documents()
+    # Обрабатываем документы и сохраняем в JSON
+    result = process_documents_to_json(
+        folder_path=INPUT_FOLDER,
+        output_file=OUTPUT_FILE
+    )
 
-    # Выводим результат
+    # Показываем структуру результата
     print("\n" + "=" * 60)
-    print("СПИСОК ЧАНКОВ:")
+    print("СТРУКТУРА JSON:")
     print("=" * 60)
 
-    if chunks:
-        # Показываем первые 5 чанков
-        for i, chunk in enumerate(chunks[:5], 1):
-            print(f"\n📌 Чанк {i} (длина: {len(chunk)} симв.):")
-            print("-" * 40)
-            print(chunk[:200] + "..." if len(chunk) > 200 else chunk)
+    print(f"\n📌 Метаданные:")
+    print(f"   - Создано: {result['metadata']['created_at']}")
+    print(f"   - Всего файлов: {result['metadata']['total_files']}")
+    print(f"   - Всего чанков: {result['metadata']['total_chunks']}")
+    print(f"   - Настроек: {result['metadata']['settings']}")
 
-        if len(chunks) > 5:
-            print(f"\n... и еще {len(chunks) - 5} чанков")
+    if 'error' in result['metadata']:
+        print(f"   - Ошибка: {result['metadata']['error']}")
 
-        # Сохраняем результат в файл
-        try:
-            with open('chunks_list.json', 'w', encoding='utf-8') as f:
-                json.dump(chunks, f, ensure_ascii=False, indent=2)
-            print(f"\n💾 Результат сохранен в 'chunks_list.json'")
-        except Exception as e:
-            print(f"\n❌ Не удалось сохранить файл: {e}")
-    else:
-        print("❌ Чанки не созданы. Проверь файлы в папке documents")
+    print(f"\n📌 Документы: {len(result['documents'])}")
 
-    # Дополнительная информация о результате
+    for doc in result['documents'][:3]:  # Показываем первые 3 документа
+        print(f"\n   📄 {doc['filename']}")
+        print(f"      - Чанков: {doc['chunks_count']}")
+        if doc['chunks']:
+            print(f"      - Первый чанк: {doc['chunks'][0]['text'][:100]}...")
+
+    # Демонстрация загрузки обратно
     print("\n" + "=" * 60)
-    print(f"📋 Тип результата: {type(chunks)}")  # <class 'list'>
-    print(f"📊 Количество чанков: {len(chunks)}")
+    print("ЗАГРУЗКА ЧАНКОВ ИЗ JSON:")
+    print("=" * 60)
 
-    # Показываем содержимое первого чанка
-    if chunks:
-        print(f"\n📝 Первый чанк (первые 200 символов):")
-        print("-" * 40)
-        print(chunks[0][:200] + "..." if len(chunks[0]) > 200 else chunks[0])
+    loaded_chunks = load_json_chunks(OUTPUT_FILE)
+    print(f"✅ Загружено чанков: {len(loaded_chunks)}")
+    if loaded_chunks:
+        print(f"📝 Первый чанк: {loaded_chunks[0][:150]}...")
