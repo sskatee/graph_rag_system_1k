@@ -257,26 +257,52 @@ def serialize_subgraph_to_text(subgraph: Dict[str, List]) -> str:
     return text
 
 
-# ==========================================
+
+
 # Пример использования
-# ==========================================
+
 if __name__ == "__main__":
+    # Это то, что вернул нам Этап 2
     found_nodes = [
         {"internal_id": 0, "canonical_name": "vLLM", "labels": ["Tool"]},
         {"internal_id": 4, "canonical_name": "квантование", "labels": ["Concept"]}
     ]
 
-    print("Строим подграф...")
+    print("=" * 70)
+    print(" СТРОИМ ПОДГРАФ")
+    print("=" * 70)
+
     subgraph = build_subgraph(
         found_nodes=found_nodes,
         neighbor_depth=1,
         find_paths_between=True
     )
 
-    print("\nУзлы:")
-    for node in subgraph["nodes"]:
-        print(f"  - {node['name']} (ID: {node['id']}, метки: {node['labels']})")
+    # ==========================================
+    # ВЫВОД 1: ГРАФ ДО ПРЕОБРАЗОВАНИЯ (сырая структура)
+    # ==========================================
+    print("\n" + "=" * 70)
+    print("📦 ГРАФ ДО ПРЕОБРАЗОВАНИЯ (сырая структура данных)")
+    print("=" * 70)
 
-    print("\nСвязи:")
+    print("\n УЗЛЫ (nodes):")
+    for node in subgraph["nodes"]:
+        print(f"  - ID: {node['id']}, Имя: {node['name']}, Метки: {node['labels']}")
+
+    print("\n🔹 СВЯЗИ (edges):")
     for edge in subgraph["edges"]:
-        print(f"  - {edge['from']} --[{edge['relation']}]--> {edge['to']} (источник: {edge['evidence']})")
+        print(f"  - from: {edge['from']}, to: {edge['to']}, relation: {edge['relation']}, evidence: {edge['evidence']}")
+
+    print("\n📊 Сводка:")
+    print(f"   Всего узлов: {len(subgraph['nodes'])}")
+    print(f"   Всего связей: {len(subgraph['edges'])}")
+
+    # ==========================================
+    # ВЫВОД 2: ГРАФ ПОСЛЕ ПРЕОБРАЗОВАНИЯ (текст для LLM)
+    # ==========================================
+    print("\n" + "=" * 70)
+    print("📝 ГРАФ ПОСЛЕ ПРЕОБРАЗОВАНИЯ (сериализованный текст для LLM)")
+    print("=" * 70)
+
+    graph_text = serialize_subgraph_to_text(subgraph)
+    print(graph_text)
