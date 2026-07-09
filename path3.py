@@ -132,7 +132,9 @@ def get_shortest_paths(entity_pairs: List[Tuple[int, int]], max_path_length: int
                 for node in record["path_nodes"]:
                     node_id = node.id
                     if node_id not in nodes_dict:
-                        node_name = node.properties.get('name', 'unknown') if hasattr(node, 'properties') and isinstance(node.properties, dict) else getattr(node, 'name', 'unknown')
+                        node_name = node.properties.get('name', 'unknown') if hasattr(node,
+                                                                                      'properties') and isinstance(
+                            node.properties, dict) else getattr(node, 'name', 'unknown')
                         node_labels = list(node.labels) if hasattr(node, 'labels') else []
 
                         nodes_dict[node_id] = {
@@ -179,7 +181,7 @@ def build_subgraph(
     """
     if not found_nodes:
         return {"nodes": [], "edges": []}
-    
+
     # Извлекаем ID найденных узлов
     node_ids = [node["internal_id"] for node in found_nodes]
 
@@ -223,6 +225,36 @@ def build_subgraph(
     print(f"🎯 Итоговый подграф: {len(final_subgraph['nodes'])} узлов, {len(final_subgraph['edges'])} связей")
 
     return final_subgraph
+
+
+def serialize_subgraph_to_text(subgraph: Dict[str, List]) -> str:
+    """
+    Превращает структуру подграфа в текст, понятный для LLM.
+    """
+    if not subgraph["nodes"] and not subgraph["edges"]:
+        return "Связи в графовой базе не найдены."
+
+    text = "📊 **Контекст из графовой базы знаний (Memgraph):**\n"
+
+    # Список сущностей
+    text += f"Найдено сущностей: {len(subgraph['nodes'])}\n"
+    for node in subgraph["nodes"]:
+        labels = ", ".join(node.get("labels", []))
+        text += f"- {node['name']} (тип: {labels})\n"
+
+    # Список связей (триплеты)
+    text += f"\nНайдено связей: {len(subgraph['edges'])}\n"
+    for edge in subgraph["edges"]:
+        # Находим имена узлов по ID для красивого вывода
+        from_name = next((n["name"] for n in subgraph["nodes"] if n["id"] == edge["from"]), "unknown")
+        to_name = next((n["name"] for n in subgraph["nodes"] if n["id"] == edge["to"]), "unknown")
+
+        text += f"- {from_name} --[{edge['relation']}]--> {to_name}"
+        if edge.get("evidence") and edge["evidence"] != "unknown":
+            text += f" *(источник: {edge['evidence']})*"
+        text += "\n"
+
+    return text
 
 
 # ==========================================
