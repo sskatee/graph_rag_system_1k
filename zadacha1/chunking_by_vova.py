@@ -3,7 +3,7 @@ import re
 import json
 from datetime import datetime
 
-# Для парсинга PDF
+# Для парсинга PDF.
 try:
     import PyPDF2
 except ImportError:
