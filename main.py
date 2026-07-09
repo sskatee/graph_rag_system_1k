@@ -1,7 +1,4 @@
 import os
-import re
-import json
-from typing import Dict, List
 from openai import OpenAI
 from qdrant_client import QdrantClient
 from gqlalchemy import Memgraph
@@ -68,11 +65,21 @@ def run_graph_rag_pipeline(user_query: str):
 
     # ЭТАП 2: Поиск сущностей в графе (Mention Matching)
     print("\n[2/4] Поиск в базах данных...")
+
     # 2.1. Векторный поиск в Qdrant
     print("   🔍 Поиск в Qdrant (векторный поиск)...")
     qdrant_results = search_qdrant(user_query, collection_name="chunks", limit=3)
-    qdrant_context = qdrant_results if qdrant_results else "Контекст не найден."
-    print(f"   ✅ Найдено результатов в Qdrant: {len(qdrant_results) if qdrant_results else 0}")
+
+    if qdrant_results:
+        # Формируем текст из списка результатов
+        qdrant_context = "\n".join([
+            f"- {r['text']} (источник: {r['source']}, стр. {r['page']}, релевантность: {r['score']:.3f})"
+            for r in qdrant_results
+        ])
+        print(f"   ✅ Найдено результатов в Qdrant: {len(qdrant_results)}")
+    else:
+        qdrant_context = "Контекст не найден."
+        print(f"   ️ Найдено результатов в Qdrant: 0")
 
     # 2.2. Графовый поиск в Memgraph
     print("    Поиск в Memgraph (графовый поиск)...")
