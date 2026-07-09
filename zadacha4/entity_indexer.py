@@ -27,16 +27,15 @@ def create_entities_collection():
 
 
 def fetch_entities_from_memgraph() -> list[dict]:
-    """Извлекает все сущности с описаниями из Memgraph."""
-    driver = GraphDatabase.driver(MEMGRAPH_URI, auth=None)
+    driver = GraphDatabase.driver(MEMGRAPH_URI, auth=("memgraph", "memgraph"))
     entities = []
 
     with driver.session() as session:
         result = session.run(
             "MATCH (e:Entity) "
-            "WHERE e.description IS NOT NULL "
+            "WHERE e.desc IS NOT NULL "  # <-- было e.description, стало e.desc
             "RETURN e.id AS entity_id, e.name AS name, "
-            "e.description AS description, labels(e) AS labels"
+            "e.desc AS description, labels(e) AS labels"  # <-- и здесь e.desc
         )
         for record in result:
             entities.append({
