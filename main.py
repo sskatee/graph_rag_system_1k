@@ -36,7 +36,7 @@ entity_types_str   = ", ".join(ENTITY_TYPES)
 relation_types_str = ", ".join(RELATION_TYPES)
 
 # Считываем файл с обработанными чанками
-file_path = "chunks_list.json"
+file_path = "zadacha1/documents/chunks_list.json"
 with open(file_path, 'r', encoding='utf-8') as file1:
     f = json.load(file1)
 

@@ -1,9 +1,9 @@
 import os
 
 # vLLM Embedding сервер
-VLLM_EMBED_BASE_URL = "http://localhost:8001/v1"
-VLLM_EMBED_MODEL = "google/embeddinggemma-300m"
-VLLM_EMBED_API_KEY = "not-needed"
+#VLLM_EMBED_BASE_URL = "http://localhost:8001/v1"
+#VLLM_EMBED_MODEL = "google/embeddinggemma-300m"
+#VLLM_EMBED_API_KEY = "not-needed"
 
 # Qdrant
 QDRANT_HOST = "localhost"
@@ -16,4 +16,4 @@ VECTOR_DIM = 768
 MEMGRAPH_URI = "bolt://localhost:7687"
 
 # Пути
-CHUNKS_INPUT_FILE = "../task1_data_processing/chunks.jsonl"  # от задачи №1
+CHUNKS_INPUT_FILE = r"C:\Users\Windows\PycharmProjects\PythonProject42\graph_rag_system_1k\zadacha1\documents\chunks_list.json"  # от задачи №1

@@ -1,3 +1,4 @@
+'''
 from openai import OpenAI
 from config import VLLM_EMBED_BASE_URL, VLLM_EMBED_MODEL, VLLM_EMBED_API_KEY
 
@@ -32,4 +33,23 @@ def get_embeddings(texts: list[str], batch_size: int = 32) -> list[list[float]]:
 
 def get_single_embedding(text: str) -> list[float]:
     """Эмбеддинг для одного текста (используется в поиске)."""
+    return get_embeddings([text])[0]
+'''
+from sentence_transformers import SentenceTransformer
+
+# Загружаем модель один раз при старте
+model = SentenceTransformer("intfloat/multilingual-e5-base")
+
+def get_embeddings(texts: list[str], batch_size: int = 32) -> list[list[float]]:
+    """
+    Получает эмбеддинги для списка текстов.
+    sentence-transformers сам обрабатывает батчи эффективно.
+    """
+    # Модель возвращает numpy-массив, преобразуем в list
+    embeddings = model.encode(texts, batch_size=batch_size, show_progress_bar=True)
+    return embeddings.tolist()
+
+
+def get_single_embedding(text: str) -> list[float]:
+    """Эмбеддинг для одного текста."""
     return get_embeddings([text])[0]

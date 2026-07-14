@@ -23,19 +23,12 @@ services:
       - "--host=0.0.0.0"
       - "--port=8000"
       - "--model=google/embeddinggemma-300m"
-      - "--max-model-len=2048"
-      - "--gpu-memory-utilization=0.05"
-      - "--max-num-seqs=48"
-      - "--max-num-batched-tokens=2048"
-      - "--dtype=auto"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: ["gpu"]
+      - "--task=embedding"
+      - "--max-model-len=512"
+      - "--device=cpu"               # <-- принудительно CPU
+      - "--max-num-seqs=8"           # <-- меньше потоков
     restart: unless-stopped
+    # БЕЗ блока deploy (он требует GPU)
 
   memgraph:
     image: memgraph/memgraph:latest
