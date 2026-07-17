@@ -18,7 +18,7 @@ services:
       - "./models_cache:/root/.cache/huggingface"
     environment:
       - PYTHONUNBUFFERED=1
-      - HUGGING_FACE_HUB_TOKEN=hf_UCKWDWOOGUOaHaQGGCsJWVignXVNJZjsANi
+      - HUGGING_FACE_HUB_TOKEN=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
     command:
       - "--host=0.0.0.0"
       - "--port=8000"

@@ -293,7 +293,7 @@ if __name__ == "__main__":
 
         # Сохраняем результат в файл (опционально)
         try:
-            with open('chunks_list.json', 'w', encoding='utf-8') as f:
+            with open('documents/chunks_list.json', 'w', encoding='utf-8') as f:
                 json.dump(chunks, f, ensure_ascii=False, indent=2)
             print(f"\n Результат сохранен в 'chunks_list.json'")
         except Exception as e:
